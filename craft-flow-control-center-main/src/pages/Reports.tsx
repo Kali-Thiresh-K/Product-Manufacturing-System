@@ -12,7 +12,7 @@ const Reports: React.FC = () => {
   const [activeTab, setActiveTab] = useState("products");
 
   // Function to generate and download CSV
-  const generateCSV = (data: any[], title: string) => {
+  const generateCSV = (data: Record<string, unknown>[], title: string) => {
     // Transform data to CSV format
     let csvContent = "";
 
@@ -57,25 +57,25 @@ const Reports: React.FC = () => {
 
   // Prepare data for product status chart
   const productStatusData = [
-    { name: "Pending", value: products.filter((p) => p.status === "pending").length, color: "#f59e0b" },
-    { name: "In Progress", value: products.filter((p) => p.status === "in-progress").length, color: "#3b82f6" },
-    { name: "Completed", value: products.filter((p) => p.status === "completed").length, color: "#10b981" },
+    { name: "Pending", value: (products || []).filter((p) => p.status === "pending").length, color: "#f59e0b" },
+    { name: "In Progress", value: (products || []).filter((p) => p.status === "in-progress").length, color: "#3b82f6" },
+    { name: "Completed", value: (products || []).filter((p) => p.status === "completed").length, color: "#10b981" },
   ];
 
   // Prepare data for materials chart
-  const materialsChartData = materials
+  const materialsChartData = (materials || [])
     .map((material) => ({
       name: material.name,
-      quantity: material.quantity,
+      quantity: material.quantity || 0,
     }))
     .sort((a, b) => b.quantity - a.quantity) // Sort by quantity in descending order
     .slice(0, 8); // Take only top 8 for better visualization
 
   // Prepare data for product cost report
-  const productCostData = products
+  const productCostData = (products || [])
     .map((product) => ({
       name: product.name,
-      cost: product.estimatedCost,
+      cost: product.estimatedCost || 0,
     }))
     .sort((a, b) => b.cost - a.cost) // Sort by cost in descending order
     .slice(0, 8); // Take only top 8
@@ -136,7 +136,7 @@ const Reports: React.FC = () => {
           <TabsTrigger value="materials">Materials</TabsTrigger>
           <TabsTrigger value="logs">Production Logs</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="products">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
@@ -163,7 +163,7 @@ const Reports: React.FC = () => {
                         outerRadius={100}
                         fill="#8884d8"
                         dataKey="value"
-                        label={({ name, value }) => `${name}: ${value}`}
+                        label={({ name, value }) => value > 0 ? `${name}: ${value}` : ''}
                       >
                         {productStatusData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
@@ -196,7 +196,7 @@ const Reports: React.FC = () => {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />
                       <YAxis />
-                      <Tooltip formatter={(value) => `$${value}`} />
+                      <Tooltip formatter={(value) => `₹${value}`} />
                       <Bar dataKey="cost" fill="#3b82f6" />
                     </BarChart>
                   </ResponsiveContainer>
@@ -204,7 +204,7 @@ const Reports: React.FC = () => {
               </CardContent>
             </Card>
           </div>
-          
+
           <div className="mt-6">
             <Card>
               <CardHeader className="pb-2">
@@ -227,7 +227,7 @@ const Reports: React.FC = () => {
             </Card>
           </div>
         </TabsContent>
-        
+
         <TabsContent value="materials">
           <Card>
             <CardHeader className="pb-2">
@@ -255,7 +255,7 @@ const Reports: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-          
+
           <div className="mt-6">
             <Card>
               <CardHeader className="pb-2">
@@ -278,7 +278,7 @@ const Reports: React.FC = () => {
             </Card>
           </div>
         </TabsContent>
-        
+
         <TabsContent value="logs">
           <Card>
             <CardHeader className="pb-2">
@@ -297,7 +297,7 @@ const Reports: React.FC = () => {
               <p className="mb-4">
                 The CSV report includes all production activities, product statuses, and timestamps.
               </p>
-              
+
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
@@ -310,7 +310,7 @@ const Reports: React.FC = () => {
                   <TableBody>
                     {logs.length > 0 ? (
                       logs
-                        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                        .sort((a, b) => (new Date(b.timestamp).getTime() || 0) - (new Date(a.timestamp).getTime() || 0))
                         .slice(0, 10)
                         .map((log) => (
                           <TableRow key={log.id}>

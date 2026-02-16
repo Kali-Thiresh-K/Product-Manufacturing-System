@@ -2,19 +2,19 @@
 import React from "react";
 import { useData, ProductStatus } from "@/context/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Package, 
-  Boxes, 
-  CheckCircle, 
-  Clock, 
-  Loader, 
+import {
+  Package,
+  Boxes,
+  CheckCircle,
+  Clock,
+  Loader,
   DollarSign,
   FileBarChart
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 
-const StatusCard: React.FC<{ title: string; value: number | string; icon: React.ReactNode; className?: string }> = ({ 
-  title, value, icon, className 
+const StatusCard: React.FC<{ title: string; value: number | string; icon: React.ReactNode; className?: string }> = ({
+  title, value, icon, className
 }) => {
   return (
     <Card className={className}>
@@ -43,28 +43,28 @@ const Dashboard: React.FC = () => {
   }
 
   // Calculate product stats
-  const pendingProducts = products.filter(p => p.status === "pending").length;
-  const inProgressProducts = products.filter(p => p.status === "in-progress").length;
-  const completedProducts = products.filter(p => p.status === "completed").length;
-  
+  const pendingProducts = products?.filter(p => p.status === "pending").length || 0;
+  const inProgressProducts = products?.filter(p => p.status === "in-progress").length || 0;
+  const completedProducts = products?.filter(p => p.status === "completed").length || 0;
+
   // Calculate total cost
-  const totalCost = products.reduce((sum, product) => sum + product.estimatedCost, 0);
-  
+  const totalCost = products?.reduce((sum, product) => sum + (product.estimatedCost || 0), 0) || 0;
+
   // Data for charts
   const statusData = [
     { name: "Pending", value: pendingProducts, color: "#f59e0b" },
     { name: "In Progress", value: inProgressProducts, color: "#3b82f6" },
     { name: "Completed", value: completedProducts, color: "#10b981" },
   ];
-  
-  const materialData = materials.map(material => ({
+
+  const materialData = (materials || []).map(material => ({
     name: material.name,
-    quantity: material.quantity
+    quantity: material.quantity || 0
   })).slice(0, 5); // Show only top 5 materials
-  
+
   // Recent logs
-  const recentLogs = [...logs].sort((a, b) => 
-    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  const recentLogs = [...(logs || [])].sort((a, b) =>
+    (new Date(b.timestamp).getTime() || 0) - (new Date(a.timestamp).getTime() || 0)
   ).slice(0, 5);
 
   return (
@@ -73,31 +73,31 @@ const Dashboard: React.FC = () => {
         <h1 className="text-2xl font-bold">Manufacturing Dashboard</h1>
         <p className="text-muted-foreground">Overview of your production status</p>
       </div>
-      
+
       {/* Status cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatusCard 
-          title="Total Products" 
-          value={products.length} 
-          icon={<Package size={24} />} 
+        <StatusCard
+          title="Total Products"
+          value={products.length}
+          icon={<Package size={24} />}
         />
-        <StatusCard 
-          title="Total Materials" 
-          value={materials.length} 
-          icon={<Boxes size={24} />} 
+        <StatusCard
+          title="Total Materials"
+          value={materials.length}
+          icon={<Boxes size={24} />}
         />
-        <StatusCard 
-          title="Completed Products" 
-          value={completedProducts} 
-          icon={<CheckCircle size={24} />} 
+        <StatusCard
+          title="Completed Products"
+          value={completedProducts}
+          icon={<CheckCircle size={24} />}
         />
-        <StatusCard 
-          title="Estimated Total Cost" 
-          value={`$${totalCost.toLocaleString()}`} 
-          icon={<DollarSign size={24} />} 
+        <StatusCard
+          title="Estimated Total Cost"
+          value={`₹${totalCost.toLocaleString()}`}
+          icon={<DollarSign size={24} />}
         />
       </div>
-      
+
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="overflow-hidden">
@@ -121,7 +121,7 @@ const Dashboard: React.FC = () => {
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
+                    label={({ name, value }) => value > 0 ? `${name}: ${value}` : ''}
                   >
                     {statusData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -134,7 +134,7 @@ const Dashboard: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle className="text-lg font-medium">
@@ -159,7 +159,7 @@ const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Recent Activity */}
       <Card>
         <CardHeader>
@@ -175,13 +175,13 @@ const Dashboard: React.FC = () => {
             {recentLogs.map((log) => (
               <div key={log.id} className="flex items-start gap-4 border-b border-border pb-4 last:border-0">
                 <div className={`h-8 w-8 rounded-full flex items-center justify-center 
-                  ${log.action.includes("completed") ? "bg-green-100 text-green-600" : 
-                    log.action.includes("started") ? "bg-blue-100 text-blue-600" : 
-                    "bg-yellow-100 text-yellow-600"}`
+                  ${log.action.includes("completed") ? "bg-green-100 text-green-600" :
+                    log.action.includes("started") ? "bg-blue-100 text-blue-600" :
+                      "bg-yellow-100 text-yellow-600"}`
                 }>
-                  {log.action.includes("completed") ? <CheckCircle size={16} /> : 
-                   log.action.includes("started") ? <Loader size={16} /> : 
-                   <Clock size={16} />}
+                  {log.action.includes("completed") ? <CheckCircle size={16} /> :
+                    log.action.includes("started") ? <Loader size={16} /> :
+                      <Clock size={16} />}
                 </div>
                 <div className="flex-1">
                   <p className="font-medium">{log.action}</p>
@@ -194,7 +194,7 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
             ))}
-            
+
             {recentLogs.length === 0 && (
               <div className="text-center py-4 text-muted-foreground">
                 No recent activity found

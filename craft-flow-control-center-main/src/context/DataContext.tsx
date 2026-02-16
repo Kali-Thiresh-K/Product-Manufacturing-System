@@ -110,9 +110,22 @@ const mockLogs: ProductionLog[] = [
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [products, setProducts] = useState<Product[]>(mockProducts);
-  const [materials, setMaterials] = useState<Material[]>(mockMaterials);
-  const [logs, setLogs] = useState<ProductionLog[]>(mockLogs);
+  const [products, setProducts] = useState<Product[]>(() => {
+    const saved = localStorage.getItem("products");
+    return saved ? JSON.parse(saved).map((p: any) => ({
+      ...p,
+      materials: p.materials || [],
+      estimatedCost: p.estimatedCost || 0
+    })) : mockProducts;
+  });
+  const [materials, setMaterials] = useState<Material[]>(() => {
+    const saved = localStorage.getItem("materials");
+    return saved ? JSON.parse(saved) : mockMaterials;
+  });
+  const [logs, setLogs] = useState<ProductionLog[]>(() => {
+    const saved = localStorage.getItem("logs");
+    return saved ? JSON.parse(saved) : mockLogs;
+  });
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -121,40 +134,58 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 800);
-    
+
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("products", JSON.stringify(products));
+  }, [products]);
+
+  useEffect(() => {
+    localStorage.setItem("materials", JSON.stringify(materials));
+  }, [materials]);
+
+  useEffect(() => {
+    localStorage.setItem("logs", JSON.stringify(logs));
+  }, [logs]);
 
   // Generate a simple ID for new items
   const generateId = (prefix: string) => {
     return `${prefix}${Date.now().toString(36)}`;
   };
-  
+
   // Helper to add a log entry
-  const addLogEntry = (productId: string, action: string) => {
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
-    
+  const addLogEntry = (productId: string, action: string, productName?: string) => {
+    let name = productName;
+
+    if (!name) {
+      const product = products.find(p => p.id === productId);
+      if (product) name = product.name;
+    }
+
+    if (!name) return;
+
     const newLog: ProductionLog = {
       id: generateId('l'),
       productId,
-      productName: product.name,
+      productName: name,
       action,
       timestamp: new Date().toISOString()
     };
-    
+
     setLogs(prevLogs => [newLog, ...prevLogs]);
   };
 
   const downloadReport = (type: "products" | "materials" | "logs") => {
-    let data: any[] = [];
+    let data: Record<string, unknown>[] = [];
     let filename = "";
-    
+
     if (type === "products") {
       data = products.map(p => ({
         Name: p.name,
         Type: p.type,
-        "Estimated Cost": `$${p.estimatedCost.toFixed(2)}`,
+        "Estimated Cost": `₹${p.estimatedCost.toFixed(2)}`,
         Status: p.status,
         "Created At": new Date(p.createdAt).toLocaleDateString()
       }));
@@ -175,14 +206,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }));
       filename = "production-logs-report.csv";
     }
-    
+
     // Convert to CSV
     const headers = data.length > 0 ? Object.keys(data[0]) : [];
     const csvContent = [
       headers.join(","),
       ...data.map(row => headers.map(header => `"${row[header]}"`).join(","))
     ].join("\n");
-    
+
     // Create blob and download
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -193,7 +224,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     toast({
       title: "Report Downloaded",
       description: `${filename} has been downloaded successfully.`,
@@ -207,10 +238,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: generateId('p'),
       createdAt: new Date().toISOString()
     };
-    
+
     setProducts(prevProducts => [newProduct, ...prevProducts]);
-    addLogEntry(newProduct.id, "Product created");
-    
+    addLogEntry(newProduct.id, "Product created", newProduct.name);
+
     toast({
       title: "Product added",
       description: `${newProduct.name} has been added successfully.`,
@@ -219,14 +250,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const editProduct = (id: string, updates: Partial<Omit<Product, "id" | "createdAt">>) => {
-    setProducts(prevProducts => 
-      prevProducts.map(product => 
+    setProducts(prevProducts =>
+      prevProducts.map(product =>
         product.id === id ? { ...product, ...updates } : product
       )
     );
-    
+
     addLogEntry(id, "Product updated");
-    
+
     toast({
       title: "Product updated",
       description: "The product has been updated successfully.",
@@ -236,14 +267,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteProduct = (id: string) => {
     const productToDelete = products.find(p => p.id === id);
-    
-    setProducts(prevProducts => 
+
+    setProducts(prevProducts =>
       prevProducts.filter(product => product.id !== id)
     );
-    
+
     if (productToDelete) {
       addLogEntry(id, `Product '${productToDelete.name}' deleted`);
-      
+
       toast({
         title: "Product deleted",
         description: `${productToDelete.name} has been removed.`,
@@ -257,9 +288,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ...material,
       id: generateId('m'),
     };
-    
+
     setMaterials(prevMaterials => [...prevMaterials, newMaterial]);
-    
+
     toast({
       title: "Material added",
       description: `${newMaterial.name} has been added to inventory.`,
@@ -268,12 +299,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const editMaterial = (id: string, updates: Partial<Omit<Material, "id">>) => {
-    setMaterials(prevMaterials => 
-      prevMaterials.map(material => 
+    setMaterials(prevMaterials =>
+      prevMaterials.map(material =>
         material.id === id ? { ...material, ...updates } : material
       )
     );
-    
+
     toast({
       title: "Material updated",
       description: "The material has been updated successfully.",
@@ -283,11 +314,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteMaterial = (id: string) => {
     const materialToDelete = materials.find(m => m.id === id);
-    
-    setMaterials(prevMaterials => 
+
+    setMaterials(prevMaterials =>
       prevMaterials.filter(material => material.id !== id)
     );
-    
+
     if (materialToDelete) {
       toast({
         title: "Material deleted",

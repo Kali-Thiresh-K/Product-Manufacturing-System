@@ -3,13 +3,13 @@ import React, { useState } from "react";
 import { useData, Product, ProductStatus } from "@/context/DataContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table";
 import {
   Dialog,
@@ -49,7 +49,7 @@ const ProductForm: React.FC<{
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>(defaultValues?.materials || []);
   const [estimatedCost, setEstimatedCost] = useState(defaultValues?.estimatedCost || 0);
   const [status, setStatus] = useState<ProductStatus>(defaultValues?.status || "pending");
-  
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit({
@@ -60,7 +60,7 @@ const ProductForm: React.FC<{
       status,
     });
   };
-  
+
   const toggleMaterial = (materialId: string) => {
     if (selectedMaterials.includes(materialId)) {
       setSelectedMaterials(selectedMaterials.filter(id => id !== materialId));
@@ -122,7 +122,7 @@ const ProductForm: React.FC<{
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="estimatedCost">Estimated Cost ($)</Label>
+          <Label htmlFor="estimatedCost">Estimated Cost (₹)</Label>
           <Input
             id="estimatedCost"
             type="number"
@@ -168,8 +168,8 @@ const Products: React.FC = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
 
-  const filteredProducts = products.filter(product => 
-    product.name.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(search.toLowerCase()) ||
     product.type.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -209,6 +209,7 @@ const Products: React.FC = () => {
   };
 
   const getMaterialNames = (materialIds: string[]) => {
+    if (!materialIds) return "";
     return materialIds
       .map(id => materials.find(m => m.id === id)?.name || "")
       .filter(Boolean)
@@ -253,9 +254,9 @@ const Products: React.FC = () => {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          
+
           <DownloadReport />
-          
+
           <Dialog open={isAddDialogOpen} onOpenChange={(open) => handleOpenChange(open, setIsAddDialogOpen)}>
             <DialogTrigger asChild>
               <Button className="w-full md:w-auto">
@@ -301,7 +302,7 @@ const Products: React.FC = () => {
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.type}</TableCell>
                   <TableCell>{getMaterialNames(product.materials)}</TableCell>
-                  <TableCell>${product.estimatedCost.toFixed(2)}</TableCell>
+                  <TableCell>₹{(product.estimatedCost || 0).toFixed(2)}</TableCell>
                   <TableCell>{getStatusBadge(product.status)}</TableCell>
                   <TableCell>{new Date(product.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell>
@@ -316,7 +317,7 @@ const Products: React.FC = () => {
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => handleDeleteProduct(product.id)}
                           className="text-red-500"
                         >
